@@ -1,172 +1,262 @@
-const choices = document.querySelectorAll(".choice");
-const result = document.getElementById("result");
-const button = document.getElementById("battleBtn");
-const slider = document.querySelector(".slider");
-const music = document.getElementById("bg-music");
-
-const userScoreEl = document.getElementById("user-score");
-const compScoreEl = document.getElementById("comp-score");
-
-let userScore = 0;
-let compScore = 0;
-
-button.addEventListener("click", () => {
-  if (!playerChoice) {
-    result.innerText = "Select a video first!";
-    return;
-  }
-
-  const computer = getComputerChoice();
-  const winner = getWinner(playerChoice, computer);
-
-  result.innerText = `You: ${playerChoice} | Enemy: ${computer} → ${winner}`;
-
-  enemyVideo.src = computer + ".mp4";
-  enemyVideo.play();
-
-  if (winner === "YOU WIN") {
-    userScore++;
-    userScoreEl.innerText = userScore;
-  } else if (winner === "YOU LOSE") {
-    compScore++;
-    compScoreEl.innerText = compScore;
-  }
-});
-
-
-// Battle
-button.addEventListener("click", () => {
-  if (!playerChoice) {
-    result.innerText = "Select a video first!";
-    return;
-  }
-
-  const computer = getComputerChoice();
-  const winner = getWinner(playerChoice, computer);
-
-  result.innerText = `You: ${playerChoice} | Enemy: ${computer} → ${winner}`;
-
-  // Show enemy video
-  enemyVideo.src = computer + ".mp4";
-  enemyVideo.play();
-
-  // Update scoreboard
-  if (winner === "YOU WIN") {
-    userScore++;
-    userScoreEl.innerText = userScore;
-  } else if (winner === "YOU LOSE") {
-    compScore++;
-    compScoreEl.innerText = compScore;
-  }
-});
-
-// Reset scoreboard
-resetBtn.addEventListener("click", () => {
-  userScore = 0;
-  compScore = 0;
-
-  userScoreEl.innerText = userScore;
-  compScoreEl.innerText = compScore;
-
-  result.innerText = "Scoreboard reset!";
-});
-
-// Opponent video
-const enemyVideo = document.getElementById("enemyVideo");
-
-// Variables
-let playerChoice = "";
-let angle = 0;
-let wins = 0;
-let losses = 0;
-let draws = 0;
-
-// CLICK SELECT + ROTATE
-choices.forEach((video, index) => {
-  video.addEventListener("click", () => {
-    playerChoice = video.dataset.choice;
-    result.innerText = "Selected: " + playerChoice;
-
-    angle = index * -120;
-    slider.style.transform = `rotateY(${angle}deg)`;
-  });
-});
-
-// COMPUTER CHOICE
-function getComputerChoice() {
-  const arr = ["punch", "scissor", "thunder"];
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// WIN LOGIC
-function getWinner(player, computer) {
-  if (player === computer) return "DRAW";
-
-  if (
-    (player === "punch" && computer === "scissor") ||
-    (player === "scissor" && computer === "thunder") ||
-    (player === "thunder" && computer === "punch")
-  ) {
-    return "YOU WIN";
-  }
-
-  return "YOU LOSE";
-}
-
-// BATTLE
-button.addEventListener("click", () => {
-  if (!playerChoice) {
-    result.innerText = "Select a video first!";
-    return;
-  }
-
-  const computer = getComputerChoice();
-  const winner = getWinner(playerChoice, computer);
-
-  result.innerText = `You: ${playerChoice} | Enemy: ${computer} → ${winner}`;
-
-  // Show enemy video (make sure punch.mp4, scissor.mp4, thunder.mp4 exist)
-  enemyVideo.src = computer + ".mp4";
-  enemyVideo.play();
-
-  // Update scoreboard
-  if (winner === "YOU WIN") {
-    wins++;
-    winsEl.innerText = wins;
-  } else if (winner === "YOU LOSE") {
-    losses++;
-    lossesEl.innerText = losses;
-  } else {
-    draws++;
-    drawsEl.innerText = draws;
-  }
-});
-
-// RESET SCOREBOARD
-const resetBtn = document.getElementById("resetBtn");
-resetBtn.addEventListener("click", () => {
-  wins = 0;
-  losses = 0;
-  draws = 0;
-
-  winsEl.innerText = wins;
-  lossesEl.innerText = losses;
-  drawsEl.innerText = draws;
-
-  result.innerText = "Scoreboard reset!";
-});
-
-// SLIDER CONTROL
-slider.addEventListener("mouseenter", () => {
-  slider.style.animationPlayState = "paused";
-});
-
-slider.addEventListener("mouseleave", () => {
-  slider.style.animationPlayState = "running";
-});
-
-// MUSIC CONTROL
-function startMusic() {
-  music.play();
-}
-
+(function() {
+    // DOM elements
+    const userScoreSpan = document.getElementById('user-score');
+    const compScoreSpan = document.getElementById('comp-score');
+    const resultDiv = document.getElementById('result');
+    const battleBtn = document.getElementById('battleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const userVideo = document.getElementById('userVideo');
+    const compVideo = document.getElementById('compVideo');
+    const choiceCards = document.querySelectorAll('.choice-card');
+    
+    // Move mapping with RPS details
+    const moveMap = {
+      'punch': { name: 'THUNDER SPEAR', rps: 'ROCK', beats: 'scissor', losesTo: 'thunder', video: 'punch.mp4', emoji: '🤜' },
+      'scissor': { name: 'BLADE STORM', rps: 'SCISSORS', beats: 'thunder', losesTo: 'punch', video: 'scissor.mp4', emoji: '✂️' },
+      'thunder': { name: 'COLOSSUS ROAR', rps: 'PAPER', beats: 'punch', losesTo: 'scissor', video: 'thunder.mp4', emoji: '📄' }
+    };
+    
+    let userScore = 0;
+    let compScore = 0;
+    let currentSelectedMove = null;      // user's chosen move
+    
+    // Disable animation flags until battle
+    let isAnimating = false;
+    
+    // Helper: Update score UI
+    function updateScoreUI() {
+      userScoreSpan.textContent = userScore;
+      compScoreSpan.textContent = compScore;
+    }
+    
+    // Helper: Set video with source and play
+    function setVideoSource(videoElement, srcPath) {
+      if (!videoElement) return;
+      if (videoElement.src !== window.location.href + srcPath && videoElement.src !== srcPath) {
+        videoElement.pause();
+        videoElement.src = srcPath;
+        videoElement.load();
+        videoElement.play().catch(e => console.log("video play", e));
+      } else {
+        videoElement.play().catch(e => console.log("play"));
+      }
+    }
+    
+    // Show default idle state for user video (first frame or default)
+    function setDefaultUserVideo() {
+      // idle: default titan emblem - we can show a default or first move preview? we set empty or neutral mp4 fallback
+      // But we set to a placeholder: use punch.mp4 as default but not showing any move? Better: show a generic "?"
+      // However since we want no selection before strike, we show a static dark video or we keep last attacked, but after reset show default.
+      // Let's set both to a neutral style: maybe the survey corps logo but we use first video as placeholder? I'll use a black video placeholder or just clear.
+      // to avoid confusion: set a dark silent video? No video source? we show nothing? but better to show a subtle emblem.
+      // For professional look, set a default "ready" poster effect. We'll set video src to a transparent or just show the first move but user hasn't selected? 
+      // To match requirement: computer selection not pre-selected, users see no move until attack. both sides: default blank or default emblems? Use empty src with black background.
+      if (userVideo) {
+        userVideo.src = '';
+        userVideo.poster = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="250" viewBox="0 0 200 250"%3E%3Crect width="200" height="250" fill="%231a110b"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23e07c3c" font-size="16"%3EWAITING%3C/text%3E%3C/svg%3E';
+        userVideo.load();
+      }
+      if (compVideo) {
+        compVideo.src = '';
+        compVideo.poster = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="250" viewBox="0 0 200 250"%3E%3Crect width="200" height="250" fill="%231a110b"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" fill="%23c2511a" font-size="16"%3E???%3C/text%3E%3C/svg%3E';
+        compVideo.load();
+      }
+    }
+    
+    // For battle: animate videos and set moves
+    function animateAndSetMoves(userMoveKey, compMoveKey) {
+      return new Promise((resolve) => {
+        const userMoveData = moveMap[userMoveKey];
+        const compMoveData = moveMap[compMoveKey];
+        
+        // Remove any previous animation classes
+        userVideo.classList.remove('animate-user');
+        compVideo.classList.remove('animate-comp');
+        
+        // Force reflow to reset animation
+        void userVideo.offsetWidth;
+        void compVideo.offsetWidth;
+        
+        // Set video sources
+        setVideoSource(userVideo, userMoveData.video);
+        setVideoSource(compVideo, compMoveData.video);
+        
+        // Add animation classes (slide from left to mid, from right to mid)
+        userVideo.classList.add('animate-user');
+        compVideo.classList.add('animate-comp');
+        
+        // Remove animation classes after duration
+        setTimeout(() => {
+          userVideo.classList.remove('animate-user');
+          compVideo.classList.remove('animate-comp');
+          resolve();
+        }, 500);
+      });
+    }
+    
+    // Determine winner: returns 'user', 'comp', 'draw'
+    function getRoundWinner(userChoice, compChoice) {
+      if (userChoice === compChoice) return 'draw';
+      const userMove = moveMap[userChoice];
+      if (userMove.beats === compChoice) return 'user';
+      return 'comp';
+    }
+    
+    // Execute battle with animations
+    async function executeBattle() {
+      if (isAnimating) {
+        resultDiv.textContent = "⚔️ BATTLE IN PROGRESS... WAIT! ⚔️";
+        return;
+      }
+      if (!currentSelectedMove) {
+        resultDiv.textContent = "⚠️ SELECT A MOVE CARD FIRST! (ROCK / PAPER / SCISSORS) ⚠️";
+        resultDiv.style.color = "#ffaa77";
+        return;
+      }
+      
+      const playerChoice = currentSelectedMove;
+      const computerChoice = getComputerMove();
+      const userMoveData = moveMap[playerChoice];
+      const compMoveData = moveMap[computerChoice];
+      const winner = getRoundWinner(playerChoice, computerChoice);
+      
+      isAnimating = true;
+      
+      // Animate the vs videos (user from left, comp from right)
+      await animateAndSetMoves(playerChoice, computerChoice);
+      
+      let resultMessage = '';
+      let scoreUpdated = false;
+      
+      if (winner === 'user') {
+        userScore++;
+        resultMessage = `🔥 VICTORY! ${userMoveData.emoji} ${userMoveData.name} (${userMoveData.rps}) crushes ${compMoveData.name} (${compMoveData.rps})! +1 SCOUT! 🔥`;
+        scoreUpdated = true;
+      } else if (winner === 'comp') {
+        compScore++;
+        resultMessage = `💀 DEFEAT! ${compMoveData.emoji} ${compMoveData.name} (${compMoveData.rps}) overpowers ${userMoveData.name} (${userMoveData.rps})! TITAN scores! 💀`;
+        scoreUpdated = true;
+      } else {
+        resultMessage = `⚖️ TITAN CLASH! Both use ${userMoveData.name} (${userMoveData.rps}) — STALEMATE! No points. ⚖️`;
+      }
+      
+      if (scoreUpdated) {
+        updateScoreUI();
+      }
+      
+      // Update result panel
+      resultDiv.textContent = resultMessage;
+      resultDiv.style.color = "#ffd6a8";
+      
+      // Flash effect
+      if (winner === 'user') {
+        document.body.style.transition = '0.1s';
+        document.body.style.backgroundColor = '#3a280e30';
+        setTimeout(() => document.body.style.backgroundColor = '', 200);
+      } else if (winner === 'comp') {
+        document.body.style.backgroundColor = '#2f111130';
+        setTimeout(() => document.body.style.backgroundColor = '', 200);
+      }
+      
+      isAnimating = false;
+    }
+    
+    // Computer random move
+    function getComputerMove() {
+      const moves = ['punch', 'scissor', 'thunder'];
+      return moves[Math.floor(Math.random() * 3)];
+    }
+    
+    // Reset Scoreboard, also reset videos to default state (no previous move)
+    function resetScoreboard() {
+      userScore = 0;
+      compScore = 0;
+      updateScoreUI();
+      resultDiv.textContent = "⚔️ SCORE RESET! CHOOSE YOUR WEAPON, SOLDIER! ⚔️";
+      resultDiv.style.color = "#ffd6a8";
+      // reset both fighter videos to default placeholder
+      setDefaultUserVideo();
+      // remove any active selection? keep selected card but we keep currentSelectedMove? Actually reset shouldn't clear chosen move but better keep.
+      // But we want fresh start, but card selection remains active but fine. reset only score and video placeholders.
+    }
+    
+    // Card selection logic
+    function onChoiceClick(event) {
+      if (isAnimating) return;
+      const targetCard = event.currentTarget;
+      const choiceValue = targetCard.getAttribute('data-choice');
+      if (!choiceValue) return;
+      
+      choiceCards.forEach(card => card.classList.remove('active'));
+      targetCard.classList.add('active');
+      currentSelectedMove = choiceValue;
+      
+      const moveData = moveMap[choiceValue];
+      resultDiv.textContent = `⚔️ SELECTED: ${moveData.emoji} ${moveData.name} — [${moveData.rps}] Press STRIKE! ⚔️`;
+      resultDiv.style.color = "#ffcf9a";
+      
+      // Flash animation on card
+      const videoElem = targetCard.querySelector('.choice');
+      if (videoElem) {
+        videoElem.style.animation = 'pulseSelect 0.2s ease';
+        setTimeout(() => { if(videoElem) videoElem.style.animation = ''; }, 200);
+      }
+      
+      // Don't show user video preview before battle - keep default/empty.
+      // Computer also remains hidden until strike.
+    }
+    
+    // Enable media interaction, loop all videos
+    function enableMedia() {
+      const bgMusic = document.getElementById('bg-music');
+      const allVids = document.querySelectorAll('video');
+      const tryPlay = () => {
+        if (bgMusic) bgMusic.play().catch(e=>{});
+        allVids.forEach(v => { if(v.paused) v.play().catch(e=>{}); });
+      };
+      document.body.addEventListener('click', function once() {
+        tryPlay();
+        document.body.removeEventListener('click', once);
+      }, { once: true });
+      tryPlay();
+    }
+    
+    function ensureLoop() {
+      const videos = document.querySelectorAll('video');
+      videos.forEach(vid => {
+        vid.addEventListener('ended', () => { vid.currentTime = 0; vid.play().catch(e=>{}); });
+        vid.muted = true;
+        vid.loop = true;
+      });
+    }
+    
+    function setDefaultActiveAndPlaceholders() {
+      // Default selected first card for better UX but no enemy selection shown until attack.
+      if (choiceCards.length > 0 && !currentSelectedMove) {
+        const firstCard = choiceCards[0];
+        const defaultMove = firstCard.getAttribute('data-choice');
+        if (defaultMove) {
+          firstCard.classList.add('active');
+          currentSelectedMove = defaultMove;
+          resultDiv.textContent = `⚔️ READY: ${moveMap[defaultMove].name} (${moveMap[defaultMove].rps}) selected. Tap Strike! ⚔️`;
+        }
+      }
+      setDefaultUserVideo();  // both sides blank placeholder
+    }
+    
+    function bindEvents() {
+      battleBtn.addEventListener('click', executeBattle);
+      resetBtn.addEventListener('click', resetScoreboard);
+      choiceCards.forEach(card => card.addEventListener('click', onChoiceClick));
+    }
+    
+    function init() {
+      bindEvents();
+      ensureLoop();
+      enableMedia();
+      setDefaultActiveAndPlaceholders();
+      updateScoreUI();
+    }
+    
+    init();
+  })();
