@@ -174,10 +174,8 @@
       updateScoreUI();
       resultDiv.textContent = "⚔️ SCORE RESET! CHOOSE YOUR WEAPON, SOLDIER! ⚔️";
       resultDiv.style.color = "#ffd6a8";
-      // reset both fighter videos to default placeholder
+     
       setDefaultUserVideo();
-      // remove any active selection? keep selected card but we keep currentSelectedMove? Actually reset shouldn't clear chosen move but better keep.
-      // But we want fresh start, but card selection remains active but fine. reset only score and video placeholders.
     }
     
     // Card selection logic
@@ -202,8 +200,6 @@
         setTimeout(() => { if(videoElem) videoElem.style.animation = ''; }, 200);
       }
       
-      // Don't show user video preview before battle - keep default/empty.
-      // Computer also remains hidden until strike.
     }
     
     // Enable media interaction, loop all videos
@@ -241,7 +237,7 @@
           resultDiv.textContent = `⚔️ READY: ${moveMap[defaultMove].name} (${moveMap[defaultMove].rps}) selected. Tap Strike! ⚔️`;
         }
       }
-      setDefaultUserVideo();  // both sides blank placeholder
+      setDefaultUserVideo();  
     }
     
     function bindEvents() {
