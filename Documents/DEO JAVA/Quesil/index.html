@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Titan Battle | Attack on Titan RPS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #0a0f1e 0%, #03060c 100%);
+      font-family: 'Segoe UI', 'Poppins', 'Impact', system-ui, -apple-system, 'Arial Narrow', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+      padding: 1rem;
+    }
+
+    /* Background video styling - subtle overlay */
+    #bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+      opacity: 0.25;
+      filter: brightness(0.6) blur(2px);
+    }
+
+    /* Dark overlay for text readability */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    /* Main Game Container */
+    .game-container {
+      max-width: 1300px;
+      width: 100%;
+      background: rgba(10, 14, 23, 0.65);
+      backdrop-filter: blur(12px);
+      border-radius: 3rem;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(228, 141, 58, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    /* TITAN BATTLE TITLE */
+    .title {
+      text-align: center;
+      font-size: 3.8rem;
+      letter-spacing: 6px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e6b17e, #c2511a, #8b2f0e);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      font-family: 'Impact', 'Segoe UI', sans-serif;
+      word-break: keep-all;
+    }
+
+    /* Scoreboard HUD - Professional Military Style */
+    #scoreboard {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 60px;
+      padding: 0.8rem 1.8rem;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 1.2rem;
+      border: 1px solid #e68a2e;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      margin: 0 auto 1.5rem auto;
+      width: fit-content;
+    }
+
+    #scoreboard h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffcd94;
+      letter-spacing: 1px;
+      margin: 0;
+      border-right: 1px solid #e68a2e;
+      padding-right: 1rem;
+    }
+
+    #score-display {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: monospace;
+      display: flex;
+      gap: 0.7rem;
+      align-items: baseline;
+      background: #1f1a14;
+      padding: 0.2rem 1rem;
+      border-radius: 50px;
+    }
+
+    #user-label, #comp-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      background: #2c241e;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      color: #f5bc70;
+    }
+
+    #user-score, #comp-score {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: #f5b642;
+      text-shadow: 0 0 5px #ff7b2c;
+      min-width: 60px;
+      display: inline-block;
+      text-align: center;
+    }
+
+    /* Enemy Titan Section */
+    .enemy-area {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 2rem;
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      border-bottom: 3px solid #a9441c;
+    }
+
+    .enemy-area h3 {
+      color: #e2b87c;
+      font-size: 1.8rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: #1e1914b3;
+      display: inline-block;
+      padding: 0.2rem 2rem;
+      border-radius: 40px;
+      margin-bottom: 1rem;
+    }
+
+    #opponent video {
+      width: 220px;
+      height: 260px;
+      object-fit: cover;
+      border-radius: 28px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.6);
+      border: 2px solid #e07c3c;
+      background: #000;
+      transition: transform 0.2s ease;
+    }
+
+    /* 3D Slider - Modern Card Carousel */
+    .slider {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin: 1.8rem 0 2rem;
+      perspective: 800px;
+    }
+
+    .choice {
+      width: 180px;
+      height: 240px;
+      border-radius: 28px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      object-fit: cover;
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(210, 95, 35, 0.2);
+      background: #111;
+      transform: scale(1) rotateY(0deg);
+      filter: brightness(0.9);
+    }
+
+    .choice:hover {
+      transform: translateY(-12px) scale(1.03);
+      box-shadow: 0 25px 35px rgba(0, 0, 0, 0.6), 0 0 0 3px #e07c3c;
+      filter: brightness(1.1);
+    }
+
+    /* active (selected) style */
+    .choice.active {
+      transform: scale(1.05) translateY(-8px);
+      box-shadow: 0 0 0 4px #ffa54d, 0 20px 30px black;
+      filter: brightness(1.2);
+      transition: 0.1s;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background: linear-gradient(145deg, #2b241f, #1a130e);
+      border: none;
+      padding: 12px 32px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-family: inherit;
+      color: #ffc285;
+      border-radius: 60px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 5px 0 #4f2c14;
+      letter-spacing: 2px;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #4f2c14;
+    }
+
+    #battleBtn {
+      background: linear-gradient(145deg, #bc5a2c, #862f0a);
+      color: #fae6cf;
+      font-size: 1.6rem;
+      padding: 12px 40px;
+      box-shadow: 0 8px 0 #4a1e08;
+    }
+
+    #resetBtn {
+      background: #26221e;
+      font-size: 1rem;
+      padding: 8px 28px;
+    }
+
+    /* result panel */
+    #result {
+      background: #000000aa;
+      backdrop-filter: blur(12px);
+      border-radius: 48px;
+      padding: 0.8rem 1.8rem;
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-align: center;
+      color: #ffd6a8;
+      text-shadow: 0 2px 5px #a13f0e;
+      margin: 1.2rem auto;
+      width: fit-content;
+      max-width: 90%;
+      border-left: 6px solid #e07c3c;
+      border-right: 6px solid #e07c3c;
+      font-family: monospace;
+    }
+
+    /* responsive layout */
+    @media (max-width: 750px) {
+      .game-container {
+        padding: 1rem;
+      }
+      .choice {
+        width: 110px;
+        height: 150px;
+      }
+      .title {
+        font-size: 2.4rem;
+      }
+      #score-display {
+        font-size: 1.3rem;
+      }
+      #user-score, #comp-score {
+        font-size: 1.6rem;
+      }
+      #result {
+        font-size: 1.2rem;
+      }
+      .action-buttons {
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+    }
+
+    /* Additional details */
+    footer {
+      margin-top: 1rem;
+      font-size: 0.7rem;
+      color: #9e7d5e;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<video autoplay muted loop id="bg-video">
+  <source src="background.mp4" type="video/mp4">
+</video>
+
+<audio id="bg-music" autoplay loop>
+  <source src="music.mp3" type="audio/mp3">
+</audio>
+
+<div class="game-container">
+  <h1 class="title">⚔️ TITAN BATTLE ⚔️</h1>
+
+  <!-- Scoreboard HUD -->
+  <div id="scoreboard">
+    <h2>⚔️ SC SURVEY CORPS ⚔️</h2>
+    <div id="score-display">
+      <span id="user-label">🪖 SCOUT</span>
+      <span id="user-score">0</span>
+      <span style="font-size:1.8rem;">:</span>
+      <span id="comp-score">0</span>
+      <span id="comp-label">🐉 TITAN</span>
+    </div>
+  </div>
+
+  <!-- Enemy Titan Display -->
+  <div class="enemy-area">
+    <h3>⚡ ENEMY TITAN SHIFTER ⚡</h3>
+    <div id="opponent">
+      <video id="enemyVideo" width="200" height="250" autoplay muted loop></video>
+    </div>
+  </div>
+
+  <!-- 3D Slider / Carousel of Attacks -->
+  <div class="slider">
+    <video class="choice" data-choice="punch" src="punch.mp4" autoplay muted loop></video>
+    <video class="choice" data-choice="scissor" src="scissor.mp4" autoplay muted loop></video>
+    <video class="choice" data-choice="thunder" src="thunder.mp4" autoplay muted loop></video>
+  </div>
+
+  <!-- Action Controls -->
+  <div class="action-buttons">
+    <button id="battleBtn">🔥 INITIATE STRIKE 🔥</button>
+    <button id="resetBtn">🔄 RESET SCOREBOARD</button>
+  </div>
+  <h2 id="result">⚔️ SELECT YOUR MOVE ⚔️</h2>
+</div>
+<footer>🎌 Attack on Titan • Choose your technique & crush the Titan! 🎌</footer>
+
+<script>
+  (function() {
+    // ---------- DOM elements ----------
+    const userScoreSpan = document.getElementById('user-score');
+    const compScoreSpan = document.getElementById('comp-score');
+    const resultDiv = document.getElementById('result');
+    const battleBtn = document.getElementById('battleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const enemyVideo = document.getElementById('enemyVideo');
+
+    // All choice videos
+    const choiceElements = document.querySelectorAll('.choice');
+    
+    // Mapping for move names & display names & video sources for enemy animation
+    const moveMap = {
+      'punch': { name: '⚡ THUNDER SPEAR ⚡', beats: 'scissor', losesTo: 'thunder', emoji: '🤜💥' },
+      'scissor': { name: '🔪 BLADE STORM 🔪', beats: 'thunder', losesTo: 'punch', emoji: '⚔️✂️' },
+      'thunder': { name: '🌩️ COLOSSUS ROAR 🌩️', beats: 'punch', losesTo: 'scissor', emoji: '💢🌀' }
+    };
+
+    // Score variables
+    let userScore = 0;
+    let compScore = 0;
+    let currentSelectedMove = null;   // stores the string 'punch', 'scissor', or 'thunder'
+
+    // Enemy titan video sources (animation for each enemy move)
+    // we need to assign proper video sources: if enemy chooses punch-> show punch.mp4? but to match narrative
+    // Actually for better UX, enemyVideo will show the titan attack based on computer's choice. I'll set up default fallback.
+    // But since we have punch.mp4, scissor.mp4, thunder.mp4 as asset, we reuse same clips for enemy (showing enemy move)
+    const moveVideoMap = {
+      'punch': 'punch.mp4',
+      'scissor': 'scissor.mp4',
+      'thunder': 'thunder.mp4'
+    };
+
+    // Helper to update enemy video based on choice
+    function updateEnemyVideo(moveKey) {
+      if (moveKey && moveVideoMap[moveKey]) {
+        const newSrc = moveVideoMap[moveKey];
+        if (enemyVideo.src !== window.location.href + newSrc && enemyVideo.src !== newSrc) {
+          // ensure video reloads properly
+          enemyVideo.pause();
+          enemyVideo.src = newSrc;
+          enemyVideo.load();
+          enemyVideo.play().catch(e => console.log("autoplay blocked", e));
+        }
+      }
+    }
+
+    // set default enemy video on start (maybe punch)
+    function setDefaultEnemy() {
+      if (enemyVideo) {
+        enemyVideo.src = 'punch.mp4';
+        enemyVideo.load();
+        enemyVideo.play().catch(e => console.log("auto play default", e));
+      }
+    }
+
+    // Update Score UI
+    function updateScoreUI() {
+      userScoreSpan.textContent = userScore;
+      compScoreSpan.textContent = compScore;
+    }
+
+    // Determine winner: returns 'user', 'comp', 'draw'
+    function getRoundWinner(userChoice, compChoice) {
+      if (userChoice === compChoice) return 'draw';
+      const userMove = moveMap[userChoice];
+      if (userMove.beats === compChoice) return 'user';
+      return 'comp';
+    }
+
+    // Play battle result and animation/result message
+    function playBattle(userChoice, compChoice) {
+      const winner = getRoundWinner(userChoice, compChoice);
+      const userMoveData = moveMap[userChoice];
+      const compMoveData = moveMap[compChoice];
+      
+      let resultMessage = '';
+      let scoreUpdated = false;
+
+      if (winner === 'user') {
+        userScore++;
+        resultMessage = `🔥 VICTORY! ${userMoveData.name} crushes ${compMoveData.name}! +1 for Survey Corps! 🔥`;
+        scoreUpdated = true;
+      } else if (winner === 'comp') {
+        compScore++;
+        resultMessage = `💀 DEFEAT! ${compMoveData.name} overpowers ${userMoveData.name}! Titan gains ground... 💀`;
+        scoreUpdated = true;
+      } else {
+        resultMessage = `⚖️ TITAN CLASH! Both use ${userMoveData.name} — STALEMATE! No points. ⚖️`;
+      }
+
+      // Update scoreboard
+      if (scoreUpdated) {
+        updateScoreUI();
+      }
+      
+      // Animated result text effect
+      resultDiv.style.transform = 'scale(1.02)';
+      resultDiv.textContent = resultMessage;
+      setTimeout(() => {
+        resultDiv.style.transform = 'scale(1)';
+      }, 200);
+      
+      // Also change background flash effect optional
+      if (winner === 'user') {
+        document.body.style.transition = '0.1s';
+        document.body.style.backgroundColor = '#3a280e30';
+        setTimeout(() => document.body.style.backgroundColor = '', 200);
+      } else if (winner === 'comp') {
+        document.body.style.backgroundColor = '#2f111130';
+        setTimeout(() => document.body.style.backgroundColor = '', 200);
+      }
+      
+      // Additional extra: small audio enhancer? we keep as is.
+      
+      // Enemy Video updates to reflect enemy move
+      updateEnemyVideo(compChoice);
+      
+      // slight shake on titan enemy for immersion
+      const enemyDiv = document.getElementById('opponent');
+      if (enemyDiv) {
+        enemyDiv.style.transform = 'translateX(4px)';
+        setTimeout(() => enemyDiv.style.transform = '', 100);
+      }
+    }
+    
+    // Generate computer move (random)
+    function getComputerMove() {
+      const moves = ['punch', 'scissor', 'thunder'];
+      const randomIndex = Math.floor(Math.random() * 3);
+      return moves[randomIndex];
+    }
+    
+    // Main battle action with current selected move
+    function executeBattle() {
+      if (!currentSelectedMove) {
+        resultDiv.textContent = "⚠️ SELECT YOUR TECHNIQUE! CLICK ON A MOVE CARD FIRST! ⚠️";
+        resultDiv.style.color = "#ffaa77";
+        // shake result slightly
+        resultDiv.style.transform = 'translateX(4px)';
+        setTimeout(() => resultDiv.style.transform = '', 200);
+        return;
+      }
+      
+      const playerChoice = currentSelectedMove;
+      const computerChoice = getComputerMove();
+      
+      // Play the round!
+      playBattle(playerChoice, computerChoice);
+    }
+    
+    // Reset Scoreboard
+    function resetScoreboard() {
+      userScore = 0;
+      compScore = 0;
+      updateScoreUI();
+      resultDiv.textContent = "⚔️ SCORE RESET! CHOOSE YOUR WEAPON, SOLDIER! ⚔️";
+      // no change to selected move, but reset does not clear active card style
+      // but we keep active
+      resultDiv.style.color = "#ffd6a8";
+    }
+    
+    // Handle click on choice video (carousel selection)
+    function onChoiceClick(event) {
+      const videoElem = event.currentTarget;
+      const choiceValue = videoElem.getAttribute('data-choice');
+      if (!choiceValue) return;
+      
+      // Remove active class from all choices
+      choiceElements.forEach(el => el.classList.remove('active'));
+      // Add active class to clicked element
+      videoElem.classList.add('active');
+      
+      // Store current selected move
+      currentSelectedMove = choiceValue;
+      
+      // Optional: update temporary preview text
+      const moveNameDisplay = moveMap[choiceValue]?.name || choiceValue;
+      resultDiv.textContent = `⚔️ SELECTED: ${moveNameDisplay}. Press INITIATE STRIKE! ⚔️`;
+      resultDiv.style.color = "#ffcf9a";
+      
+      // Add card scale effect confirmation
+      videoElem.style.transform = 'scale(1.02)';
+      setTimeout(() => {
+        if (videoElem.classList.contains('active')) 
+          videoElem.style.transform = '';
+        else videoElem.style.transform = '';
+      }, 200);
+    }
+    
+    // Attempt to play background music & video with user interaction (some browsers block autoplay)
+    // but we'll implement a global 'first click' to resume bg music / videos if needed.
+    function enableMediaOnFirstInteraction() {
+      const bgMusic = document.getElementById('bg-music');
+      const bgVideoEl = document.getElementById('bg-video');
+      const allVideos = document.querySelectorAll('video');
+      
+      const tryPlay = () => {
+        if (bgMusic) {
+          bgMusic.play().catch(e => console.log("music autoplay prevented, need interaction"));
+        }
+        if (bgVideoEl) {
+          bgVideoEl.play().catch(e => console.log("bg video play"));
+        }
+        allVideos.forEach(vid => {
+          if (vid.paused) vid.play().catch(e => {});
+        });
+      };
+      tryPlay();
+      // also attach to any click event once to ensure
+      document.body.addEventListener('click', function once() {
+        tryPlay();
+        document.body.removeEventListener('click', once);
+      }, { once: true });
+    }
+    
+    // Force video loop & playing on selection of enemy video
+    function ensureVideosLoop() {
+      const videos = document.querySelectorAll('video');
+      videos.forEach(vid => {
+        vid.addEventListener('loadeddata', () => {
+          vid.play().catch(e => console.log("playback err"));
+        });
+        vid.addEventListener('ended', () => {
+          vid.currentTime = 0;
+          vid.play().catch(e => {});
+        });
+      });
+    }
+    
+    // Set up enemy video initial and maintain loop
+    function initEnemy() {
+      if (!enemyVideo) return;
+      enemyVideo.loop = true;
+      enemyVideo.muted = true;  // keeps consistent, no sound overlap
+      enemyVideo.setAttribute('autoplay', '');
+      setDefaultEnemy();
+    }
+    
+    // Also the slider videos need to be muted and looped
+    function initChoiceVideos() {
+      choiceElements.forEach(vid => {
+        vid.loop = true;
+        vid.muted = true;
+        vid.setAttribute('playsinline', 'true');
+        vid.play().catch(e => console.log("choice video might need interaction"));
+      });
+    }
+    
+    // Reset & event binding
+    function bindEvents() {
+      battleBtn.addEventListener('click', () => {
+        executeBattle();
+      });
+      resetBtn.addEventListener('click', () => {
+        resetScoreboard();
+      });
+      choiceElements.forEach(choice => {
+        choice.addEventListener('click', onChoiceClick);
+      });
+    }
+    
+    // additional: professional visual styling for result animation timeout
+    // Also ensure that after battle, if computer wins, enemy video switches and the user can reselect.
+    // making sure current selected stays active, but after each battle the result resets messages but selection remains
+    (function setup() {
+      initChoiceVideos();
+      initEnemy();
+      ensureVideosLoop();
+      bindEvents();
+      enableMediaOnFirstInteraction();
+      updateScoreUI();
+      // auto select first move as optional but not forced? To improve UX, we can set default selection first card as active
+      if (choiceElements.length > 0 && !currentSelectedMove) {
+        // default active the first card 'punch' for better experience
+        const firstCard = choiceElements[0];
+        const defaultChoice = firstCard.getAttribute('data-choice');
+        if (defaultChoice) {
+          firstCard.classList.add('active');
+          currentSelectedMove = defaultChoice;
+          resultDiv.textContent = `⚔️ READY: ${moveMap[defaultChoice]?.name} selected. Tap Strike! ⚔️`;
+        }
+      }
+      // if background music remains stopped, first user gesture resumes
+      window.addEventListener('touchstart', function resumeAudio() {
+        const music = document.getElementById('bg-music');
+        if (music && music.paused) music.play().catch(e=>{});
+        const videosAll = document.querySelectorAll('video');
+        videosAll.forEach(v => { if(v.paused) v.play().catch(e=>{}); });
+      }, { once: true });
+      window.addEventListener('click', function resumeAudioClick() {
+        const music = document.getElementById('bg-music');
+        if (music && music.paused) music.play().catch(e=>{});
+      });
+    })();
+  })();
+</script>
+</body>
+</html>
